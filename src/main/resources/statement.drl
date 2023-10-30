@@ -1,0 +1,43 @@
+package com.course.sie.data.service.FinancialAnalysisService
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import com.course.sie.data.entity.FinancialStatement
+import com.course.sie.data.entity.Company
+import com.course.sie.data.entity.Industry
+
+dialect "mvel"
+
+rule "Rule 0: Test Rule"
+then
+    System.out.println("Drools started!");
+end
+
+
+rule "Rule 1: Check Net Income"
+when
+    $fs: FinancialStatement(netIncome < 0, $company: company)
+then
+  Logger logger = LoggerFactory.getLogger("FinancialAnalysisService.class");
+      logger.warn("The company {} has a negative net income.", $company.getName());
+end
+
+
+rule "Rule 2: Complex Financial Analysis Rule"
+when
+    $fs: FinancialStatement(netIncome < 0, $company: company)
+    $c: Company(name == "DROOLS S.A", $size: size)
+    eval($fs.getExpenses() > $fs.getRevenue() * 0.5)
+then
+    Logger logger = LoggerFactory.getLogger("FinancialAnalysisService.class");
+    logger.warn("The large company in the Manufacturing industry with a financial statement for year {} has negative net income and high expenses.", $c.getYear());
+end
+
+
+rule "Rule n: Test Rule"
+then
+    System.out.println("Drools stopped!");
+end
+
+
+
