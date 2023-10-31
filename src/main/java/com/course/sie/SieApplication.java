@@ -30,7 +30,7 @@ public class SieApplication {
         FinancialStatement financialStatement = new FinancialStatement();
         financialStatement.setCod(UUID.randomUUID());
         financialStatement.setCompany(company);
-        financialStatement.setNetIncome(-50000);
+        financialStatement.setNetIncome(50000);
         financialStatement.setExpenses(30000);
         financialStatement.setRevenue(80000);
         financialStatement.setTotalIncome(20000);

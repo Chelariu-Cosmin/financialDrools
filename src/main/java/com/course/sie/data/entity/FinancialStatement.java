@@ -25,4 +25,6 @@ public class FinancialStatement {
      * income statement data, including revenue, expenses, and net income
      **/
     private double totalIncome;
+
+    private double totalRevenue;
 }

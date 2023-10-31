@@ -2,15 +2,25 @@ package com.course.sie.data.service.FinancialAnalysisService
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.course.sie.data.entity.FinancialStatement
-import com.course.sie.data.entity.Company
-import com.course.sie.data.entity.Industry
+import com.course.sie.data.entity.FinancialStatement;
+import com.course.sie.data.entity.Company;
+import com.course.sie.data.entity.Industry;
+import com.course.sie.data.entity.BalanceSheet;
+import com.course.sie.data.entity.CashFlowStatement;
 
 dialect "mvel"
 
+rule "Initializer Drools"
+then
+Logger logger = LoggerFactory.getLogger("FinancialAnalysisService.class");
+   logger.info("--------------------------------------------------------");
+end
+
+
 rule "Rule 0: Test Rule"
 then
-    System.out.println("Drools started!");
+Logger logger = LoggerFactory.getLogger("FinancialAnalysisService.class");
+   logger.info("Drools started!");
 end
 
 
@@ -18,25 +28,145 @@ rule "Rule 1: Check Net Income"
 when
     $fs: FinancialStatement(netIncome < 0, $company: company)
 then
-  Logger logger = LoggerFactory.getLogger("FinancialAnalysisService.class");
+Logger logger = LoggerFactory.getLogger("FinancialAnalysisService.class");
       logger.warn("The company {} has a negative net income.", $company.getName());
+end
+
+
+rule "Rule 2: Check Current Ratio"
+when
+    $bs : BalanceSheet(currentAssets / currentLiabilities < 1, $financialStatement: financialStatement)
+then
+Logger logger = LoggerFactory.getLogger("FinancialAnalysisService.class");
+    logger.info("The company {} has a current ratio less than 1.", $financialStatement.getCompany().getName());
 end
 
 
 rule "Rule 2: Complex Financial Analysis Rule"
 when
-    $fs: FinancialStatement(netIncome < 0, $company: company)
-    $c: Company(name == "DROOLS S.A", $size: size)
-    eval($fs.getExpenses() > $fs.getRevenue() * 0.5)
+    $fs: FinancialStatement(totalIncome >= 20000)
+    $c: Company(name == "DROOLS S.A", size > 10)
 then
     Logger logger = LoggerFactory.getLogger("FinancialAnalysisService.class");
-    logger.warn("The large company in the Manufacturing industry with a financial statement for year {} has negative net income and high expenses.", $c.getYear());
+    logger.warn("The large company in the Manufacturing industry with a financial statement for year {} has negative net income and high expenses.");
+end
+
+rule "Rule 3: Check Company Size"
+when
+    $c : Company(size <= 0)
+then
+   Logger logger = LoggerFactory.getLogger("FinancialAnalysisService.class");
+   logger.error("The company " + $c.getName() + " has an invalid size.");
+end
+
+
+rule "Rule 4: Computed revenue for company"
+when
+    $financialStatement : FinancialStatement()
+then
+     $totalRevenue= $financialStatement.getRevenue() - $financialStatement.getExpenses();
+Logger logger = LoggerFactory.getLogger("FinancialAnalysisService.class");
+     logger.info("Total {} for company {}", $totalRevenue, $financialStatement.getCompany().getName());
+end
+
+
+rule "Rule 5: Detection of anomalies in current assets"
+when
+$balanceSheet : BalanceSheet()
+then
+Logger logger = LoggerFactory.getLogger("FinancialAnalysisService.class");
+if ($balanceSheet.getCurrentAssets > $balanceSheet.getNonCurrentAssets * 1.5 || $balanceSheet.getCurrentAssets < $balanceSheet.getNonCurrentAssets * 0.5) {
+Logger logger = LoggerFactory.getLogger("FinancialAnalysisService.class");
+     logger.warn("There is an asset anomaly in company {} ", $balanceSheet.getFinancialStatement().getCompany.getName());
+} else {
+Logger logger = LoggerFactory.getLogger("FinancialAnalysisService.class");
+ logger.info("No anomaly found in company {} ", $balanceSheet.getFinancialStatement().getCompany.getName());
+}
+end
+
+
+rule "Rule 6: Current liquidity calculation"
+when
+    $balanceSheet : BalanceSheet()
+    $currentAssetsLocal : Double() from $balanceSheet.getCurrentAssets()
+    $currentLiabilitiesLocal : Double() from $balanceSheet.getCurrentLiabilities()
+then
+    Double currentLiquidity = $currentAssetsLocal / $currentLiabilitiesLocal;
+    Logger logger = LoggerFactory.getLogger("FinancialAnalysisService.class");
+    logger.info("Current Liquidity is {} for company {}", currentLiquidity, $balanceSheet.getFinancialStatement().getCompany().getName());
+end
+
+
+rule "Rule 7: Debt to Equity Ratio Calculation"
+when
+    $balanceSheet : BalanceSheet()
+    $totalLiabilities : Double() from ($balanceSheet.getCurrentLiabilities() + $balanceSheet.getNonCurrentLiabilities())
+    $totalEquity : Double() from ($balanceSheet.getFinancialStatement().getTotalIncome() - $balanceSheet.getFinancialStatement().getExpenses())
+then
+    String company = $balanceSheet.getFinancialStatement().getCompany().getName()
+    Double equityRatio = $totalLiabilities / $totalEquity
+    Logger logger = LoggerFactory.getLogger("FinancialAnalysisService.class");
+    logger.info("Debt to Equity Ratio for company {}: {}", company, equityRatio);
+end
+
+
+rule "Rule 8: Evaluate Company Financial Health"
+when
+    $fs: FinancialStatement(netIncome < 0, $company: company)
+    $c: Company($industry: industry, $year: year)
+    eval(
+        $industry == "Manufacturing" &&
+        $fs.getExpenses() > $fs.getRevenue() * 0.5
+    )
+then
+    Logger logger = LoggerFactory.getLogger("FinancialAnalysisService.class");
+    logger.warn("The Manufacturing company in the year {} has negative net income and high expenses.", $year);
+end
+
+
+rule "Rule 9: Evaluate Company's Expenses"
+when
+    $company: Company($name: name)
+    $fs: FinancialStatement(netIncome > 0)
+    $bs: FinancialStatement($expenses: expenses)
+    eval($expenses > 50000)
+then
+    System.out.println("Company " + $company.getName() + " has positive net income but high expenses.");
+end
+
+
+rule "Rule 10: Technology Industry Check"
+when
+    $company: Company(industry == Industry.TECHNOLOGY)
+then
+    System.out.println("Company " + $company.getName() + " operates in the TECHNOLOGY industry.");
+end
+
+rule "Rule 11: Evaluate Financial Health"
+when
+    $company: Company($name: name)
+    $fs: FinancialStatement(netIncome < 0)
+    $bs: BalanceSheet(financialStatement == $fs, $balanceSheet: this, $currentAssets: currentAssets, $nonCurrentAssets: nonCurrentAssets)
+    eval($currentAssets + $nonCurrentAssets < 50000)
+then
+    System.out.println("Company " + $company.getName() + " has poor financial health.");
+end
+
+
+rule "Rule 12: Evaluate Company's Liquidity"
+when
+    $balanceSheet: BalanceSheet($currentAssets: currentAssets, $nonCurrentAssets: nonCurrentAssets)
+    eval($currentAssets > $nonCurrentAssets)
+then
+String company = $balanceSheet.getFinancialStatement().getCompany().getName()
+    System.out.println("Company " + company + " has more current assets than non-current assets.");;
 end
 
 
 rule "Rule n: Test Rule"
 then
-    System.out.println("Drools stopped!");
+Logger logger = LoggerFactory.getLogger("FinancialAnalysisService.class");
+    logger.info("Drools stopped!");
 end
 
 
